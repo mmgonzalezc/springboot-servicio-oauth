@@ -1,6 +1,6 @@
 package com.formacionbdi.springboot.app.oauth.clients;
 
-import com.formacionbdi.springboot.app.commons.usuarios.models.entity.Usuario;
+import com.formacionbdi.springboot.app.usuarios.commons.models.entity.Usuario;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 

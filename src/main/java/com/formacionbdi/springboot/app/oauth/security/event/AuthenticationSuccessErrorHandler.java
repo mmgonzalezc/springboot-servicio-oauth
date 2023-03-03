@@ -1,7 +1,7 @@
 package com.formacionbdi.springboot.app.oauth.security.event;
 
 import com.formacionbdi.springboot.app.oauth.services.IUsuarioService;
-import com.formacionbdi.springboot.app.commons.usuarios.models.entity.Usuario;
+import com.formacionbdi.springboot.app.usuarios.commons.models.entity.Usuario;
 import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

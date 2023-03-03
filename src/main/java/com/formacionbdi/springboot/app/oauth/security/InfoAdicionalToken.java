@@ -1,7 +1,7 @@
 package com.formacionbdi.springboot.app.oauth.security;
 
 import com.formacionbdi.springboot.app.oauth.services.IUsuarioService;
-import com.formacionbdi.springboot.app.usuarios.commons.models.entity.Usuario;
+import com.formacionbdi.springboot.app.commons.usuarios.models.entity.Usuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;

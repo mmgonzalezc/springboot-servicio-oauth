@@ -1,5 +1,6 @@
 package com.formacionbdi.springboot.app.oauth.security.event;
 
+import brave.Tracer;
 import com.formacionbdi.springboot.app.oauth.services.IUsuarioService;
 import com.formacionbdi.springboot.app.commons.usuarios.models.entity.Usuario;
 import feign.FeignException;
@@ -20,10 +21,16 @@ import java.util.Objects;
  */
 @Component
 public class AuthenticationSuccessErrorHandler implements AuthenticationEventPublisher {
-    private Logger logger = LoggerFactory.getLogger(AuthenticationSuccessErrorHandler.class);
+    private Logger LOGGER = LoggerFactory.getLogger(AuthenticationSuccessErrorHandler.class);
 
     @Autowired
     private IUsuarioService usuarioService;
+
+    /***
+     * Dependencia para poder agregar trazabilidad de logs a zipkin
+     */
+    @Autowired
+    private Tracer tracer;
 
     @Override
     public void publishAuthenticationSuccess(Authentication authentication) {
@@ -36,7 +43,7 @@ public class AuthenticationSuccessErrorHandler implements AuthenticationEventPub
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String mensaje = "Success Login: " + userDetails.getUsername();
         System.out.println(mensaje);
-        logger.info(mensaje);
+        LOGGER.info(mensaje);
         Usuario usuario = usuarioService.findByUsername(authentication.getName());
         if (Objects.nonNull(usuario.getIntentos()) && usuario.getIntentos() > 0) {
             usuario.setIntentos(0);
@@ -47,8 +54,7 @@ public class AuthenticationSuccessErrorHandler implements AuthenticationEventPub
     @Override
     public void publishAuthenticationFailure(AuthenticationException exception, Authentication authentication) {
         String mensaje = "Error en el Login: " + exception.getMessage();
-        logger.error(mensaje);
-        System.out.println(mensaje);
+        LOGGER.error(mensaje);
         try {
             StringBuilder errors = new StringBuilder();
             errors.append(mensaje);
@@ -57,19 +63,20 @@ public class AuthenticationSuccessErrorHandler implements AuthenticationEventPub
             if (Objects.isNull(usuario.getIntentos())) {
                 usuario.setIntentos(0);
             }
-            logger.info("Intentos actual es de: " + usuario.getIntentos());
+            LOGGER.info("Intentos actual es de: " + usuario.getIntentos());
             usuario.setIntentos(usuario.getIntentos() + 1);
-            logger.info("Intentos despues es de: " + usuario.getIntentos());
+            LOGGER.info("Intentos despues es de: " + usuario.getIntentos());
             errors.append(" - Intentos del login: " + usuario.getIntentos());
             if (usuario.getIntentos() >= 3) {
                 String errorMaxIntentos = String.format("El usuario %s des-habilitado por máximos intentos.", usuario.getUsername());
-                logger.error(errorMaxIntentos);
+                LOGGER.error(errorMaxIntentos);
                 errors.append(" - " + errorMaxIntentos);
                 usuario.setEnabled(false);
             }
             usuarioService.update(usuario, usuario.getId()); // Desavilitamos el usuarios
+        tracer.currentSpan().tag("error.mensaje", errors.toString());
         } catch (FeignException e) {
-            logger.error(String.format("El usuario %s no existe en el sistema", authentication.getName()));
+            LOGGER.error(String.format("El usuario %s no existe en el sistema", authentication.getName()));
         }
 
     }

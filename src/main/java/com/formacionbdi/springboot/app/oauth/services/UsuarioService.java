@@ -1,5 +1,6 @@
 package com.formacionbdi.springboot.app.oauth.services;
 
+import brave.Tracer;
 import com.formacionbdi.springboot.app.oauth.clients.UsuarioFeignClient;
 import com.formacionbdi.springboot.app.commons.usuarios.models.entity.Usuario;
 import feign.FeignException;
@@ -27,6 +28,11 @@ public class UsuarioService implements IUsuarioService, UserDetailsService {
 
     @Autowired
     private UsuarioFeignClient client;
+    /***
+     * Dependencia para poder agregar trazabilidad de logs a zipkin
+     */
+    @Autowired
+    private Tracer tracer;
 
     /***
      * Metodo encargado de autenticar, obtiene el usuario por username
@@ -50,12 +56,14 @@ public class UsuarioService implements IUsuarioService, UserDetailsService {
                     .peek(authority -> log.info("Role: " + authority.getAuthority()))
                     .collect(Collectors.toList());
 
-            log.info("Usuario autenticado: " + username);
+            log.info("Usuario autenticado: {}" , username);
             return new User(usuario.getUsername(), usuario.getPassword(), usuario.getEnabled(), true,
                     true, true, authorities);
         } catch (FeignException e) {
-            log.error("Error en el login, no existe el usuario '" + username + "' en el sistema");
-            throw new UsernameNotFoundException("Error en el login, no existe el usuario '" + username + "' en el sistema");
+           String error = "Error en el login, no existe el usuario '" + username + "' en el sistema";
+            log.error(error);
+            tracer.currentSpan().tag("error.mensaje",error + ": " +e.getMessage());
+            throw new UsernameNotFoundException(error);
         }
     }
 
